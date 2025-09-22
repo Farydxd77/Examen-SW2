@@ -153,15 +153,22 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'solizfarydmarquez@gmail.com'
 EMAIL_HOST_PASSWORD = 'kxbodoimtkqrncdi'  # Sin espacios
 
-# Al final de settings.py, agregar:
-
-# Aumentar límites para adjuntos de email
-DATA_UPLOAD_MAX_MEMORY_SIZE = 50 * 1024 * 1024  # 50 MB
-FILE_UPLOAD_MAX_MEMORY_SIZE = 50 * 1024 * 1024  # 50 MB
-
 # Email por defecto para envío
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
-# Para requests muy grandes
+# En settings.py - REEMPLAZAR los límites actuales:
+
+# Límites aumentados para PDFs grandes (200 MB cada uno)
+DATA_UPLOAD_MAX_MEMORY_SIZE = 200 * 1024 * 1024  # 200 MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 200 * 1024 * 1024  # 200 MB
+
+# Límite adicional para el cuerpo de requests
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000
+
+# Para manejar requests muy grandes
 CSRF_COOKIE_SECURE = False
 CSRF_COOKIE_HTTPONLY = False
+
+# Timeout más largo para requests pesados (opcional)
+# Puedes agregar esto si usas un servidor como Gunicorn
+# CONN_MAX_AGE = 60

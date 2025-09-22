@@ -283,89 +283,100 @@
     document.getElementById('email-destinatario-simple').value = '';
   }
 
-  function confirmarEnvioEmail() {
-    const destinatario = document.getElementById('email-destinatario-simple').value;
-    
-    if (!destinatario) {
-      alert('Por favor ingresa un email');
-      return;
-    }
-    
-    if (!destinatario.includes('@')) {
-      alert('Por favor ingresa un email válido');
-      return;
-    }
-    
-    addMessage("bot", "📧 Generando PDF y enviando email...");
-    cerrarModalSimple();
-    
-    const container = document.getElementById('grafico-container');
-    
-    html2canvas(container, {
-      backgroundColor: '#ffffff',
-      scale: 2,
-      logging: false
-    }).then(canvas => {
-      // Generar PDF automáticamente
-      const { jsPDF } = window.jspdf;
-      const pdf = new jsPDF('landscape');
-      
-      // Título del PDF
-      pdf.setFontSize(20);
-      pdf.text(currentChartData.titulo, 20, 30);
-      
-      // Fecha de generación
-      pdf.setFontSize(12);
-      pdf.text(`Generado el: ${new Date().toLocaleDateString()}`, 20, 45);
-      pdf.text(`Hora: ${new Date().toLocaleTimeString()}`, 20, 55);
-      
-      // Agregar el gráfico
-      const imgData = canvas.toDataURL('image/png');
-      const imgWidth = 250;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      pdf.addImage(imgData, 'PNG', 20, 70, imgWidth, imgHeight);
-      
-      // Info adicional en el PDF
-      pdf.setFontSize(10);
-      pdf.text('Generado por Software2 BI', 20, pdf.internal.pageSize.height - 20);
-      
-      // Convertir PDF a base64
-      const pdfData = pdf.output('datauristring');
-      const fileName = `grafico_${currentChartData.titulo.replace(/\s+/g, '_')}_${new Date().getTime()}.pdf`;
-      
-      // Enviar al backend
-      fetch("{% url 'ingestion:enviar_email' %}", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRFToken": getCookie("csrftoken"),
-        },
-        body: JSON.stringify({
-          destinatario: destinatario,
-          asunto: `Reporte: ${currentChartData.titulo}`,
-          mensaje: `Hola,\n\nAdjunto el gráfico "${currentChartData.titulo}" generado el ${new Date().toLocaleDateString()} a las ${new Date().toLocaleTimeString()}.\n\nEste reporte fue generado automáticamente por Software2 BI.\n\nSaludos.`,
-          attachment: pdfData,
-          fileName: fileName,
-          formato: 'pdf'
-        })
-      })
-      .then(resp => resp.json())
-      .then(data => {
-        if (data.success) {
-          addMessage("bot", `✅ PDF enviado exitosamente a ${destinatario}`);
-        } else {
-          addMessage("err", `❌ Error al enviar email: ${data.error}`);
-        }
-      })
-      .catch(err => {
-        addMessage("err", "❌ Error de conexión: " + err.message);
-      });
-      
-    }).catch(err => {
-      addMessage("err", "❌ Error al generar PDF: " + err.message);
-    });
-  }
+ // REEMPLAZAR completamente la función confirmarEnvioEmail() en tu prueba.html:
 
+function confirmarEnvioEmail() {
+  const destinatario = document.getElementById('email-destinatario-simple').value;
+  
+  if (!destinatario) {
+    alert('Por favor ingresa un email');
+    return;
+  }
+  
+  if (!destinatario.includes('@')) {
+    alert('Por favor ingresa un email válido');
+    return;
+  }
+  
+  addMessage("bot", "📧 Generando PDF optimizado y enviando email...");
+  cerrarModalSimple();
+  
+  const container = document.getElementById('grafico-container');
+  
+  html2canvas(container, {
+    backgroundColor: '#ffffff',
+    scale: 1.2, // Reducido para menor tamaño
+    logging: false,
+    useCORS: true,
+    allowTaint: true
+  }).then(canvas => {
+    // Generar PDF optimizado
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('landscape');
+    
+    // Título del PDF
+    pdf.setFontSize(18);
+    pdf.text(currentChartData.titulo, 20, 25);
+    
+    // Fecha de generación
+    pdf.setFontSize(11);
+    pdf.text(`Generado: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`, 20, 35);
+    
+    // Comprimir imagen antes de añadir al PDF
+    const imgData = canvas.toDataURL('image/jpeg', 0.6); // JPEG con 60% calidad
+    const imgWidth = 180; // Reducido
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    pdf.addImage(imgData, 'JPEG', 20, 45, imgWidth, imgHeight);
+    
+    // Info adicional
+    pdf.setFontSize(9);
+    pdf.text('Software2 BI', 20, pdf.internal.pageSize.height - 15);
+    
+    // Convertir PDF a base64
+    const pdfData = pdf.output('datauristring');
+    const fileName = `grafico_${Date.now()}.pdf`;
+    
+    // Verificar tamaño
+    const sizeInMB = (pdfData.length * 0.75) / (1024 * 1024);
+    console.log(`📊 Tamaño del PDF: ${sizeInMB.toFixed(2)} MB`);
+    
+    if (sizeInMB > 20) {
+      addMessage("err", `❌ PDF muy grande (${sizeInMB.toFixed(2)} MB). Intenta con menos datos.`);
+      return;
+    }
+    
+    // Enviar al backend
+    fetch("{% url 'ingestion:enviar_email' %}", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": getCookie("csrftoken"),
+      },
+      body: JSON.stringify({
+        destinatario: destinatario,
+        asunto: `Reporte: ${currentChartData.titulo}`,
+        mensaje: `Hola,\n\nAdjunto el gráfico "${currentChartData.titulo}".\n\nGenerado el ${new Date().toLocaleDateString()} a las ${new Date().toLocaleTimeString()}.\n\nSaludos,\nSoftware2 BI`,
+        attachment: pdfData,
+        fileName: fileName,
+        formato: 'pdf'
+      })
+    })
+    .then(resp => resp.json())
+    .then(data => {
+      if (data.success) {
+        addMessage("bot", `✅ PDF enviado exitosamente a ${destinatario}`);
+      } else {
+        addMessage("err", `❌ Error: ${data.error}`);
+      }
+    })
+    .catch(err => {
+      addMessage("err", "❌ Error de conexión: " + err.message);
+    });
+    
+  }).catch(err => {
+    addMessage("err", "❌ Error al generar PDF: " + err.message);
+  });
+}
   // 🚀 ENVIAR MENSAJE AL CHAT
   sendBtn.addEventListener("click", () => {
     const text = userInput.value.trim();
